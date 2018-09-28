@@ -16,30 +16,97 @@
 		<canvas id = "canvas_game" width = "800" height = "640" style = "border:1px solid #000000;">
 		Your browser does not support HTML5 canvas tag.
 		</canvas>
+		
+		<div id = "music"></div>
 
+		<script src = "Sprite.js"></script>
+		<script src = "AkkoImage.js"></script>
+		<script src = "AkkoSprite.js"></script>
 		<script language = "javascript" type = "text/javascript">
 		
 		// Global variables
 		var array_entities = [];
 		
 		var keyState = {};	// keyboard events		
+		var ongoingTouches = [];	// Touch Events
+		
+		var score = 0;
 		
 		// Player variable
 		var player;
 		var player_size = 5;
-
-		// Canvas
-		var canvas = document.getElementById("canvas_game");
+		
+		var player_max_health = 100;
+		var player_health = player_max_health;
+		
+		//---------------------------------------------------
+		// Initialize Canvas
+		//---------------------------------------------------
+		
+		var canvas = document.createElement("canvas");
+		canvas.id = "canvas_game";
+		canvas.width = 800;
+		canvas.height = 640;
+		canvas.style = "border:1px solid #000000;";
 		var context = canvas_game.getContext("2d");
 		
+		//---------------------------------------------------
+		// Initialize Game Engine-ish Mechanics
+		//---------------------------------------------------
 		var fps = 1000 / 60;
 		setInterval(Draw, fps);
 		setInterval(Cycle, fps);
 		
-		// Initialization
+		canvas.addEventListener("touchstart", handleStart, false);
+		canvas.addEventListener("touchend", handleEnd, false);
+		canvas.addEventListener("touchcancel", handleCancel, false);
+		canvas.addEventListener("touchmove", handleMove, false);
+		
+		window.addEventListener("beforeunload", function(e)
+		{
+			var confirmationMessage = "\o/";
+			
+			save();
+			
+			(e || window.event).returnValue = confirmationMessage;		// Gecko + IE
+			return confirmationMessage;									// Webkit, Safari, Chrome
+		});
+		
+		load();
+		
+		//--------------------------------------------------
+		// Initialize Music
+		//--------------------------------------------------
+
+		
+		var music_player = new Audio("music/music1.mp3");
+		if ( typeof music_player.loop == "boolean"){
+			
+			music_player.loop = true;
+			
+		} else{
+			
+			music_player.addEventListener("ended", function(){
+				this.currentTime = 0;
+				this.play;
+				}, false);
+		
+		}
+		music_player.play();
+		
+		//-------------------------------------------------
+		// Initializing images
+		//-------------------------------------------------
+		
+		var image_akko = new Image();
+		image_akko.src = "https://github.com/XplosiveLun/XplosiveLun.github.io/blob/master/Image/Akko.png?raw=true";
+		
+		//-------------------------------------------------
+		// Initialize Game Object(s)
+		//-------------------------------------------------
 		var sprite;
 		
-		player = new Sprite(200, 100);		// Creating the player
+		player = new AkkoSprite(200, 100);		// Creating the player
 		player.set_player(true);
 		player.set_image(image_akko);
 		player.set_size(32);
@@ -50,282 +117,29 @@
 			var random = Math.random();
 			var y = canvas.height * random;
 			
-			sprite = new Sprite(x, y);		// Creating enemies
+			sprite = new AkkoSprite(x, y);		// Creating enemies
 			sprite.set_size(2);
-		}
-		
-		//-------------------------------------------------
-		// Initializing images
-		//-------------------------------------------------
-		
-		var image_akko = new Image();
-		image_akko.src = "https://github.com/XplosiveLun/XplosiveLun.github.io/blob/master/Image/Akko.png?raw=true";
-		
-		//-------------------------------------------------
-		// Sprite Object
-		//-------------------------------------------------
-		
-		// "Static" methods
-		
-		// Detector
-		function Check_Sprite_Collision(){
-		
-			for ( var i = 0; i < array_entities.length; i++){
-				
-				for ( var j = i + 1; j < array_entities.length; j++){
-					
-					var entity_a = array_entities[i];
-					var entity_b = array_entities[j];
-					
-					if ( entity_a.x - entity_a.size <= entity_b.x + entity_b.size &&
-					entity_b.x - entity_b.size <= entity_a.x + entity_a.size &&
-					entity_a.y - entity_a.size <= entity_b.y + entity_b.size &&
-					entity_b.y - entity_b.size <= entity_a.y + entity_a.size){	
-
-						Sprite_Collision(entity_a, entity_b);
-					
-					}
-					
-				}
-				
-			}
-		
-		}
-		
-		// Actioner
-		function Sprite_Collision(sprite_hitter, sprite_hittee){
-		
-			/*
-			sprite_hitter.speed_x *= -1;
-			sprite_hitter.speed_y *= -1;
-			
-			sprite_hittee.speed_x *= -1;
-			sprite_hittee.speed_y *= -1;
-			*/
-			
-			
-			var sprite;
-			if ( sprite_hitter != player && sprite_hittee != player){
-			
-				sprite_hitter.kill();
-				sprite_hittee.kill();
-				
-			} else 	if ( sprite_hitter != player){
-			
-				sprite_hitter.kill();
-				
-			} else{
-			
-				sprite_hittee.kill();
-				
-			}
-			
-			/*
-			sprite.speed_x *= -1;
-			sprite.speed_y *= -1;
-			*/
-			
-			console.log("Something Collided!");
-			
-		}
-		
-		// Action after a sprite died
-		function Sprite_Dying(sprite){
-		
-			if ( sprite != player ){
-				
-				var random = Math.random();
-				var x = canvas.width * random;
-				var random = Math.random();
-				var y = canvas.height * random;
-				
-				sprite = new Sprite(x, y);		// Creating enemies
-				sprite.set_size(2);
-			
-			}
-			
-		}
-		
-		// Sprite Constructor
-		function Sprite(x, y){
-		
-			array_entities.push(this);
-			// Member variables
-			this.x = x;
-			this.y = y;
-			this.size = 16;		// distance between the centre and the bounds
-			
-			this.speed_x = 0;
-			this.speed_y = 0;
-			this.accel = 0.1;
-			this.max_speed = 1;
-			this.image;
-			
-			this.b_is_moving = false;
-			this.b_player = false;	// Is this a player?
-			
-			
-			//----------------------------------------------
-			// Accessor Methods:
-			// set_player
-			// set_image
-			//----------------------------------------------
-			
-			this.set_player = function(b)			{ this.b_player = b; };
-			this.set_image = function(image_name)	{ this.image = image_name; };
-			this.set_size = function(size)			{ this.size = size; };
-			
-			//----------------------------------------------
-			// General Methods:
-			// update
-			// go
-			// draw
-			// kill
-			//----------------------------------------------
-			
-			
-			// Update the Sprite
-			this.update = function(){
-			
-				this.b_is_moving = false;
-				
-				if ( this.b_player == true){
-					
-					// Player-specific Functions
-					// React to keyboard inputs
-		
-					// A
-					if (keyState[65]){
-						player.go("north");
-					}
-					// D
-					if (keyState[68]){
-						player.go("east");
-					}
-					// S
-					if (keyState[83]){
-						player.go("south");
-					}
-					// W
-					if (keyState[87]){
-						player.go("west");
-					}
-					
-				} else {
-					
-					// AI Go to else where
-					var random = Math.floor(Math.random() * 4);
-					
-					if ( random == 0){
-						this.go("north");
-					} else if ( random == 1){
-						this.go("east");
-					} else if ( random == 2){
-						this.go("south");
-					} else if ( random == 3){
-						this.go("west");
-					}
-					
-				}
-			
-				// Move
-				this.x = this.x + Math.min(this.max_speed, Math.max(this.speed_x, -this.max_speed));
-				this.y = this.y + Math.min(this.max_speed, Math.max(this.speed_y, -this.max_speed));
-				
-								
-				// Prevent escaping the canvas
-				if ( this.x < 0 ){
-					this.x = 0;
-					this.speed_x *= -1;
-				} else if ( this.x > canvas.width){
-					this.x = canvas.width;
-					this.speed_x *= -1;
-				}
-				
-				if ( this.y < 0 ){
-					this.y = 0;
-					this.speed_y *= -1;
-				} else if ( this.y > canvas.height){
-					this.y = canvas.height;
-					this.speed_y *= -1;
-				}
-				
-				
-				
-			};
-			
-			// Move Sprite Around function
-			this.go = function(direction){
-			
-				this.b_is_moving = true;
-				
-				if ( direction == "north" ){
-					this.speed_x = Math.max(this.speed_x - this.accel, -1);
-				} else if ( direction == "east" ){
-					this.speed_x = Math.min(this.speed_x + this.accel, 1);
-				} else if ( direction == "south" ){
-					this.speed_y = Math.min(this.speed_y + this.accel, 1);
-				} else if ( direction == "west" ){
-					this.speed_y = Math.max(this.speed_y - this.accel, -1);
-				}
-
-					
-			
-			};
-			
-			// Draw Function
-			this.draw = function(){
-			
-				if ( this.b_player == false){
-				
-					context.beginPath();
-					context.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
-					context.stroke();
-					
-					
-					
-				} else {
-				
-					context.beginPath();
-					context.arc(this.x, this.y, 10, 0, 2 * Math.PI);
-					context.fillStyle = "green";
-					context.fill();
-					context.stroke();
-					
-					context.drawImage(image_akko, player.x - 32, player.y - 32);
-					
-				}
-				
-			};
-			
-			this.kill = function() {
-			
-				Sprite_Dying(this);
-			
-				var pos = array_entities.indexOf(this);
-				array_entities.splice(pos, 1);
-				
-				delete this;
-				
-			}
-			
 		}
 		
 		// Game Cycle
 		function Cycle(){
 		
-
 							
 			// Updating entities
 			for ( var i = 0; i < array_entities.length; i++){
-
 				array_entities[i].update();
 			
 			}
 			
 			// Check Sprite Collisions
 			Check_Sprite_Collision()
-
+			
+			// Game-specific mechanics
+			if ( player_health < player_max_health ){
+			
+				player_health += 0.1;
+				
+			}
 			
 		}
 		
@@ -336,20 +150,77 @@
 			
 			// Draw Entities
 			for ( var i = 0; i < array_entities.length; i++){
-
+			
 				array_entities[i].draw();
 				
 			}
+			
+			// Draw score
+			context.font = "30px Arial";
+			context.fillText("Score:", 35, 35);
+			context.fillText(score, 185, 35);
+			
+			// Draw Health Bar
+			context.rect(player.x - 32, player.y - 40, 64, 10);
+			context.stroke();
+			
+			context.beginPath();
+			context.rect(player.x - 31, player.y - 39, 63 * player_health / player_max_health, 9);
+			context.fillStyle = "green";
+			context.fill();
 		
 		}
 		
 		// Keyboard event
-
 		window.addEventListener("keydown", function(e){
 			keyState[e.keyCode || e.which] = true;}, true);
 		window.addEventListener("keyup", function(e){
 			keyState[e.keyCode || e.which ] = false;}, true);
 		
+		// Touch Events
+		function handleStart(evt){
+			
+			evt.preventDefault();
+			var touches = evt.changedTouches;
+			
+			for ( var i = 0; i < touches.length; i++){
+			
+				ongoingTouches.push(copyTouch(touches[i]));
+				var color = colorForTouch(touches[i]);
+				context.beginPath();
+				context.arc(touches[i].pageX, touches[i].pageY, 4, 0, 2 * Math.PI, false);
+				context.fillStyle = color;
+				
+			}
+		
+		}
+		
+		function handleEnd(evt){
+		
+		}
+		
+		function handleCancel(evt){
+		
+		}
+		
+		function handleMove(evt){
+		
+		}
+		
+		function save()
+		{
+			localStorage.setItem("score", score);
+		}
+		
+		function load()
+		{
+			score = localStorage.getItem("score");
+		}
+		
+		function exportSave()
+		{
+			
+		}
 		</script>
 		
 		
