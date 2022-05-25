@@ -22,15 +22,20 @@
 		<script src = "Sprite.js"></script>
 		<script src = "AkkoImage.js"></script>
 		<script src = "AkkoSprite.js"></script>
+		<script src = "MusicPlayer.js"></script>
 		<script language = "javascript" type = "text/javascript">
 		
+		//--------------------------------
 		// Global variables
+		//--------------------------------
 		var array_entities = [];
 		
 		var keyState = {};	// keyboard events		
-		var ongoingTouches = [];	// Touch Events
+		//var ongoingTouches = [];	// Touch Events
 		
 		var score = 0;
+		
+		
 		
 		// Player variable
 		var player;
@@ -38,6 +43,9 @@
 		
 		var player_max_health = 100;
 		var player_health = player_max_health;
+		
+		// Music Player
+		var g_musicPlayer = new MusicPlayer();
 		
 		//---------------------------------------------------
 		// Initialize Canvas
@@ -57,42 +65,20 @@
 		setInterval(Draw, fps);
 		setInterval(Cycle, fps);
 		
+		/*
 		canvas.addEventListener("touchstart", handleStart, false);
 		canvas.addEventListener("touchend", handleEnd, false);
 		canvas.addEventListener("touchcancel", handleCancel, false);
 		canvas.addEventListener("touchmove", handleMove, false);
-		
-		window.addEventListener("beforeunload", function(e)
-		{
-			var confirmationMessage = "\o/";
-			
-			save();
-			
-			(e || window.event).returnValue = confirmationMessage;		// Gecko + IE
-			return confirmationMessage;									// Webkit, Safari, Chrome
-		});
-		
-		load();
+		*/
 		
 		//--------------------------------------------------
 		// Initialize Music
 		//--------------------------------------------------
-
 		
-		var music_player = new Audio("music/music1.mp3");
-		if ( typeof music_player.loop == "boolean"){
-			
-			music_player.loop = true;
-			
-		} else{
-			
-			music_player.addEventListener("ended", function(){
-				this.currentTime = 0;
-				this.play;
-				}, false);
-		
-		}
-		music_player.play();
+		g_musicPlayer.SetMusic("music/music1.mp3");
+		g_musicPlayer.SetLoop(true);
+		g_musicPlayer.PlayMusic();
 		
 		//-------------------------------------------------
 		// Initializing images
@@ -138,7 +124,6 @@
 			if ( player_health < player_max_health ){
 			
 				player_health += 0.1;
-				
 			}
 			
 		}
@@ -177,6 +162,7 @@
 		window.addEventListener("keyup", function(e){
 			keyState[e.keyCode || e.which ] = false;}, true);
 		
+		/*
 		// Touch Events
 		function handleStart(evt){
 			
@@ -195,6 +181,8 @@
 		
 		}
 		
+		
+		
 		function handleEnd(evt){
 		
 		}
@@ -206,21 +194,8 @@
 		function handleMove(evt){
 		
 		}
+		*/
 		
-		function save()
-		{
-			localStorage.setItem("score", score);
-		}
-		
-		function load()
-		{
-			score = localStorage.getItem("score");
-		}
-		
-		function exportSave()
-		{
-			
-		}
 		</script>
 		
 		
