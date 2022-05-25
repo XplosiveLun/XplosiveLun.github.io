@@ -71,6 +71,20 @@
 		canvas.addEventListener("touchcancel", handleCancel, false);
 		canvas.addEventListener("touchmove", handleMove, false);
 		*/
+			
+		window.addEventListener("beforeunload", function(e)
+		{
+			var confirmationMessage = "\o/";
+
+			save();
+
+			(e || window.event).returnValue = confirmationMessage;		// Gecko + IE
+			return confirmationMessage;									// Webkit, Safari, Chrome
+		});
+
+		load();
+
+
 		
 		//--------------------------------------------------
 		// Initialize Music
